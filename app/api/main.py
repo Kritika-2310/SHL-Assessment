@@ -8,10 +8,8 @@ from app.agent.agent import run_agent
 app = FastAPI(title="SHL Assessment Agent")
 
 
-# ── Schemas ───────────────────────────────────────────────────────────────────
-
 class Message(BaseModel):
-    role: str      # "user" or "assistant"
+    role: str
     content: str
 
 
@@ -31,8 +29,6 @@ class ChatResponse(BaseModel):
     end_of_conversation: bool
 
 
-# ── Endpoints ─────────────────────────────────────────────────────────────────
-
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -43,23 +39,14 @@ def chat(request: ChatRequest):
     if not request.messages:
         raise HTTPException(status_code=400, detail="messages cannot be empty")
 
-    # Validate roles
     for msg in request.messages:
         if msg.role not in ("user", "assistant"):
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid role '{msg.role}'. Must be 'user' or 'assistant'."
-            )
+            raise HTTPException(status_code=400, detail=f"Invalid role '{msg.role}'.")
 
-    # Last message must be from user
     if request.messages[-1].role != "user":
-        raise HTTPException(
-            status_code=400,
-            detail="Last message must be from 'user'."
-        )
+        raise HTTPException(status_code=400, detail="Last message must be from 'user'.")
 
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
-
     result = run_agent(messages)
 
     return ChatResponse(
